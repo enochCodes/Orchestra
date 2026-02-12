@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: orchestra
+      POSTGRES_PASSWORD: orchestra_password
+      POSTGRES_DB: orchestra
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestra -d orchestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["/app/api"]
+    restart: always
+    environment:
+      SERVER_PORT: "8080"
+      DATABASE_URL: "postgres://orchestra:orchestra_password@db:5432/orchestra?sslmode=disable"
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: ""
+      REDIS_DB: "0"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}"
+      JWT_SECRET: "${JWT_SECRET:-orchestra-jwt-secret-change-in-production}"
+      SKIP_AUTH: "${SKIP_AUTH:-true}"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["/app/worker"]
+    restart: always
+    environment:
+      DATABASE_URL: "postgres://orchestra:orchestra_password@db:5432/orchestra?sslmode=disable"
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: ""
+      REDIS_DB: "0"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8080/api/v1"
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  redis_data:

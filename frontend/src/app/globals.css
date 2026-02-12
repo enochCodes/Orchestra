@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors - True Dark (Vercel-like) */
+  --color-bg-app: #000000;
+  /* True Black */
+  --color-bg-subtle: #0a0a0a;
+  /* Almost Black for sidebars */
+  --color-bg-card: #000000;
+  /* Black cards */
+  --color-bg-surface: #111111;
+  /* Dark gray for inputs */
+
+  --color-border-subtle: #333333;
+  /* Dark Gray */
+  --color-border-strong: #444444;
+  /* Slightly lighter gray */
+
+  --color-text-primary: #ededed;
+  /* Off-white */
+  --color-text-secondary: #a1a1aa;
+  /* Zinc 400 */
+  --color-text-muted: #666666;
+  /* Darker gray */
+
+  /* Brand Accents (Monochrome + Subtle Blue/Violet) */
+  --color-brand-primary: #ededed;
+  /* White for primary actions */
+  --color-brand-primary-hover: #ffffff;
+  /* Pure white */
+  --color-brand-glow: rgba(255, 255, 255, 0.1);
+  --color-brand-accent: #0070f3;
+  /* Vercel Blue for highlights */
+  --color-brand-accent-glow: rgba(0, 112, 243, 0.15);
+
+  /* Functional Colors */
+  --color-success: #0070f3;
+  /* Blue (Vercel style success/info often blue or green) - let's stick to Green for success */
+  --color-success-real: #00e05e;
+  /* Vercel Green */
+  --color-success-bg: rgba(0, 112, 243, 0.1);
+
+  --color-warning: #f5a623;
+  /* Amber */
+  --color-warning-bg: rgba(245, 166, 35, 0.1);
+
+  --color-error: #ff0000;
+  /* Red */
+  --color-error-bg: rgba(255, 0, 0, 0.1);
+
+  /* Dimensions */
+  --sidebar-width: 256px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Font */
+  --font-sans: var(--font-inter);
+}
+
+@layer base {
+  * {
+    @apply border-border-subtle box-border;
+  }
+
+  body {
+    @apply bg-bg-app text-text-primary antialiased min-h-screen selection:bg-brand-accent selection:text-white;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-subtle rounded-full hover:bg-border-strong transition-colors;
+  }
+}
+
+@layer components {
+
+  /* Layout Structures */
+  .layout-wrapper {
+    @apply flex h-screen overflow-hidden bg-bg-app;
+  }
+
+  .main-content {
+    @apply flex-1 flex flex-col h-full overflow-hidden relative ml-[var(--sidebar-width)];
+  }
+
+  .content-scroll-area {
+    @apply flex-1 overflow-y-auto p-8 scroll-smooth;
+  }
+
+  /* Glassmorphism Utilities - Simplified for Vercel purity */
+  .glass-panel {
+    @apply bg-bg-app/80 backdrop-blur-md border border-border-subtle;
+  }
+
+  .glass-card {
+    @apply bg-bg-card border border-border-subtle rounded-xl shadow-sm transition-all duration-200 hover:border-text-muted;
+  }
+
+  /* Text Gradients - more subtle */
+  .text-gradient {
+    @apply text-text-primary;
+  }
+
+  .text-gradient-brand {
+    @apply text-text-primary;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+}

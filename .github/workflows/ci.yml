@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  backend-lint-test:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Verify dependencies
+        working-directory: ./backend
+        run: go mod verify
+      - name: Build
+        working-directory: ./backend
+        run: go build -v ./...
+      - name: Test
+        working-directory: ./backend
+        run: go test -v ./...
+
+  frontend-lint-build:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      - name: Lint
+        working-directory: ./frontend
+        run: npm run lint
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build

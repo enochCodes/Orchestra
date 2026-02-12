@@ -1,0 +1,46 @@
+# Binaries
+/bin/
+/backend/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Mac
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.next/
+out/
+build/
+dist/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Go
+/backend/vendor/
+go.work
+
+# Env
+.env
+*.pem
+
+# Terraform / Infrastructure
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+# Docker
+docker-compose.override.yml
