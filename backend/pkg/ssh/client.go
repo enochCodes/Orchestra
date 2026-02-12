@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net"
-	"regexp"
 	"strings"
 	"time"
 

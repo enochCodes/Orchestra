@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	tasks "github.com/enochcodes/orchestra/backend/internal/engine"
 	"github.com/enochcodes/orchestra/backend/internal/models"
-	"github.com/enochcodes/orchestra/backend/internal/tasks"
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 )
-
-// Note: Activity logging for cluster events is done in the task handlers.
 
 // ClusterService provides business logic for cluster operations.
 type ClusterService struct {
@@ -31,14 +29,16 @@ func NewClusterService(db *gorm.DB, client *asynq.Client, encryptionKey string) 
 // DesignClusterInput represents the input for designing a new cluster.
 type DesignClusterInput struct {
 	Name            string `json:"name" validate:"required"`
+	Type            string `json:"type"` // k8s, docker_swarm, manual
 	ManagerServerID uint   `json:"manager_server_id" validate:"required"`
 	WorkerServerIDs []uint `json:"worker_server_ids"`
 	CNIPlugin       string `json:"cni_plugin"`
+	Domain          string `json:"domain"`
 }
 
-// DesignCluster creates a new cluster, designates a manager, and enqueues worker join tasks.
+// DesignCluster creates a new cluster and enqueues provisioning tasks based on cluster type.
 func (s *ClusterService) DesignCluster(input DesignClusterInput) (*models.Cluster, error) {
-	// Validate manager server exists and is ready
+	// Validate manager server
 	var manager models.Server
 	if err := s.DB.First(&manager, input.ManagerServerID).Error; err != nil {
 		return nil, fmt.Errorf("manager server not found: %w", err)
@@ -47,48 +47,108 @@ func (s *ClusterService) DesignCluster(input DesignClusterInput) (*models.Cluste
 		return nil, fmt.Errorf("manager server is not in 'ready' state (current: %s)", manager.Status)
 	}
 
-	// Set default CNI
+	// Defaults
+	clusterType := models.ClusterType(input.Type)
+	if clusterType == "" {
+		clusterType = models.ClusterTypeK8s
+	}
+
 	cni := input.CNIPlugin
-	if cni == "" {
+	if cni == "" && clusterType == models.ClusterTypeK8s {
 		cni = "flannel"
 	}
 
-	// Create cluster record
+	// Create cluster
 	cluster := models.Cluster{
 		Name:            input.Name,
+		Type:            clusterType,
 		ManagerServerID: input.ManagerServerID,
 		CNIPlugin:       cni,
+		Domain:          input.Domain,
 		Status:          models.ClusterStatusPending,
 	}
 	if err := s.DB.Create(&cluster).Error; err != nil {
 		return nil, fmt.Errorf("failed to create cluster: %w", err)
 	}
 
-	// Enqueue manager designation task
-	task, err := tasks.NewDesignateManagerTask(cluster.ID, input.ManagerServerID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create manager task: %w", err)
-	}
-	if _, err := s.AsynqClient.Enqueue(task); err != nil {
-		return nil, fmt.Errorf("failed to enqueue manager task: %w", err)
-	}
-	log.Printf("Enqueued manager designation task for cluster %d", cluster.ID)
-
-	// Enqueue worker join tasks (these will wait for the manager to be ready via retry logic)
-	for _, workerID := range input.WorkerServerIDs {
-		task, err := tasks.NewJoinWorkerTask(cluster.ID, workerID)
-		if err != nil {
-			log.Printf("Failed to create join task for worker %d: %v", workerID, err)
-			continue
+	// Enqueue provisioning based on cluster type
+	switch clusterType {
+	case models.ClusterTypeK8s:
+		if err := s.provisionK8s(cluster.ID, input); err != nil {
+			return &cluster, err
 		}
-		if _, err := s.AsynqClient.Enqueue(task); err != nil {
-			log.Printf("Failed to enqueue join task for worker %d: %v", workerID, err)
-			continue
+	case models.ClusterTypeDockerSwarm:
+		if err := s.provisionSwarm(cluster.ID, input); err != nil {
+			return &cluster, err
 		}
-		log.Printf("Enqueued worker join task for server %d -> cluster %d", workerID, cluster.ID)
+	case models.ClusterTypeManual:
+		if err := s.provisionManual(cluster.ID, input); err != nil {
+			return &cluster, err
+		}
+	default:
+		return nil, fmt.Errorf("unsupported cluster type: %s", clusterType)
 	}
 
 	return &cluster, nil
+}
+
+func (s *ClusterService) provisionK8s(clusterID uint, input DesignClusterInput) error {
+	task, err := tasks.NewDesignateManagerTask(clusterID, input.ManagerServerID)
+	if err != nil {
+		return fmt.Errorf("create manager task: %w", err)
+	}
+	if _, err := s.AsynqClient.Enqueue(task); err != nil {
+		return fmt.Errorf("enqueue manager task: %w", err)
+	}
+	log.Printf("Enqueued K3s manager task for cluster %d", clusterID)
+
+	for _, workerID := range input.WorkerServerIDs {
+		t, err := tasks.NewJoinWorkerTask(clusterID, workerID)
+		if err != nil {
+			log.Printf("Failed to create K8s worker task for %d: %v", workerID, err)
+			continue
+		}
+		if _, err := s.AsynqClient.Enqueue(t); err != nil {
+			log.Printf("Failed to enqueue K8s worker task for %d: %v", workerID, err)
+		}
+	}
+	return nil
+}
+
+func (s *ClusterService) provisionSwarm(clusterID uint, input DesignClusterInput) error {
+	task, err := tasks.NewSwarmInitTask(clusterID, input.ManagerServerID)
+	if err != nil {
+		return fmt.Errorf("create swarm init task: %w", err)
+	}
+	if _, err := s.AsynqClient.Enqueue(task); err != nil {
+		return fmt.Errorf("enqueue swarm init task: %w", err)
+	}
+	log.Printf("Enqueued Swarm init task for cluster %d", clusterID)
+
+	for _, workerID := range input.WorkerServerIDs {
+		t, err := tasks.NewSwarmJoinTask(clusterID, workerID)
+		if err != nil {
+			log.Printf("Failed to create Swarm join task for %d: %v", workerID, err)
+			continue
+		}
+		if _, err := s.AsynqClient.Enqueue(t); err != nil {
+			log.Printf("Failed to enqueue Swarm join task for %d: %v", workerID, err)
+		}
+	}
+	return nil
+}
+
+func (s *ClusterService) provisionManual(clusterID uint, input DesignClusterInput) error {
+	// Manual clusters: install Docker on all nodes, mark cluster active
+	task, err := tasks.NewManualClusterSetupTask(clusterID, input.ManagerServerID, input.WorkerServerIDs)
+	if err != nil {
+		return fmt.Errorf("create manual setup task: %w", err)
+	}
+	if _, err := s.AsynqClient.Enqueue(task); err != nil {
+		return fmt.Errorf("enqueue manual setup task: %w", err)
+	}
+	log.Printf("Enqueued manual cluster setup for cluster %d", clusterID)
+	return nil
 }
 
 // GetCluster retrieves a cluster by ID with its relations.
@@ -103,7 +163,7 @@ func (s *ClusterService) GetCluster(id uint) (*models.Cluster, error) {
 // ListClusters retrieves all clusters.
 func (s *ClusterService) ListClusters() ([]models.Cluster, error) {
 	var clusters []models.Cluster
-	if err := s.DB.Preload("ManagerServer").Find(&clusters).Error; err != nil {
+	if err := s.DB.Preload("ManagerServer").Preload("Workers").Find(&clusters).Error; err != nil {
 		return nil, fmt.Errorf("failed to list clusters: %w", err)
 	}
 	return clusters, nil

@@ -9,7 +9,8 @@ import {
     AppWindow,
     Activity,
     Settings,
-    History
+    History,
+    Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const links = [
     { href: "/servers", label: "Servers", icon: Server },
     { href: "/clusters", label: "Clusters", icon: Network },
     { href: "/applications", label: "Applications", icon: AppWindow },
+    { href: "/environments", label: "Environments", icon: Key },
     { href: "/deployments", label: "Deployments", icon: History },
     { href: "/monitoring", label: "Monitoring", icon: Activity },
     { href: "/settings", label: "Settings", icon: Settings },

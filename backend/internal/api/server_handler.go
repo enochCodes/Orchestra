@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	tasks "github.com/enochcodes/orchestra/backend/internal/engine"
 	"github.com/enochcodes/orchestra/backend/internal/models"
 	"github.com/enochcodes/orchestra/backend/internal/services"
-	"github.com/enochcodes/orchestra/backend/internal/tasks"
+	sshpkg "github.com/enochcodes/orchestra/backend/pkg/ssh"
 	"github.com/gofiber/fiber/v2"
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
@@ -54,8 +55,11 @@ func (h *ServerHandler) Register(c *fiber.Ctx) error {
 		req.SSHPort = 22
 	}
 
+	// Normalize PEM key (fixes paste issues: extra line breaks, wrong wraps)
+	normalizedKey := sshpkg.NormalizePEMKey([]byte(req.SSHKey))
+
 	// Encrypt SSH key
-	encryptedKey, err := tasks.Encrypt([]byte(req.SSHKey), h.EncryptionKey)
+	encryptedKey, err := tasks.Encrypt(normalizedKey, h.EncryptionKey)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to encrypt SSH key")
 	}
@@ -69,13 +73,13 @@ func (h *ServerHandler) Register(c *fiber.Ctx) error {
 
 	// Create server record
 	server := models.Server{
-		Hostname:         req.Hostname,
-		IP:               req.IP,
-		SSHPort:          req.SSHPort,
-		SSHUser:          req.SSHUser,
-		SSHKeyEncrypted:  encryptedKey,
-		Status:           models.ServerStatusPending,
-		CreatedByUserID:   userID,
+		Hostname:        req.Hostname,
+		IP:              req.IP,
+		SSHPort:         req.SSHPort,
+		SSHUser:         req.SSHUser,
+		SSHKeyEncrypted: encryptedKey,
+		Status:          models.ServerStatusPending,
+		CreatedByUserID: userID,
 	}
 
 	if err := h.DB.Create(&server).Error; err != nil {
@@ -233,4 +237,16 @@ func (h *ServerHandler) CreateTeam(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to create team")
 	}
 	return c.Status(fiber.StatusCreated).JSON(team)
+}
+
+// Delete handles DELETE /api/v1/servers/:id
+func (h *ServerHandler) Delete(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid server ID")
+	}
+	if err := h.DB.Delete(&models.Server{}, uint(id)).Error; err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to delete server")
+	}
+	return c.JSON(fiber.Map{"message": "server deleted"})
 }

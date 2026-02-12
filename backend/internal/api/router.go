@@ -67,6 +67,7 @@ func SetupRouter(db *gorm.DB, asynqClient *asynq.Client, encryptionKey, jwtSecre
 	servers.Get("/:id", serverHandler.Get)
 	servers.Get("/:id/logs", serverHandler.GetLogs)
 	servers.Patch("/:id", serverHandler.Update)
+	servers.Delete("/:id", serverHandler.Delete)
 
 	// Cluster routes
 	clusterSvc := services.NewClusterService(db, asynqClient, encryptionKey)
@@ -88,6 +89,8 @@ func SetupRouter(db *gorm.DB, asynqClient *asynq.Client, encryptionKey, jwtSecre
 	applications.Post("/", appHandler.Create)
 	applications.Get("/:id", appHandler.Get)
 	applications.Patch("/:id", appHandler.Update)
+	applications.Delete("/:id", appHandler.Delete)
+	applications.Post("/:id/redeploy", appHandler.Redeploy)
 
 	// Deployment routes
 	depHandler := NewDeploymentHandler(db)
@@ -95,6 +98,23 @@ func SetupRouter(db *gorm.DB, asynqClient *asynq.Client, encryptionKey, jwtSecre
 	deployments.Get("/", depHandler.List)
 	deployments.Get("/:id", depHandler.Get)
 	deployments.Get("/:id/logs", depHandler.GetLogs)
+
+	// Environment routes
+	envHandler := NewEnvironmentHandler(db, asynqClient)
+	environments := auth.Group("/environments")
+	environments.Get("/", envHandler.List)
+	environments.Post("/", envHandler.Create)
+	environments.Get("/:id", envHandler.Get)
+	environments.Patch("/:id", envHandler.Update)
+	environments.Delete("/:id", envHandler.Delete)
+	environments.Post("/:id/push", envHandler.Push)
+
+	// Nginx routes
+	nginxHandler := NewNginxHandler(db, asynqClient)
+	nginx := auth.Group("/nginx")
+	nginx.Get("/", nginxHandler.List)
+	nginx.Post("/", nginxHandler.Create)
+	nginx.Delete("/:id", nginxHandler.Delete)
 
 	// Activity routes
 	activityHandler := NewActivityHandler(db)

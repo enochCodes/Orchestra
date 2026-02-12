@@ -88,10 +88,7 @@ export const api = {
     }),
   me: () => request<{ id: number; email: string; display_name: string; system_role: string }>("/auth/me"),
   updateProfile: (data: { display_name?: string; avatar?: string }) =>
-    request<{ id: number; email: string; display_name: string; system_role: string }>("/auth/me", {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    }),
+    request<any>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
 
   // Servers
   servers: {
@@ -103,8 +100,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    update: (id: number, data: { hostname?: string; team_id?: number }) =>
+    update: (id: number, data: any) =>
       request<any>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<any>(`/servers/${id}`, { method: "DELETE" }),
     logs: (id: number) => request<any>(`/servers/${id}/logs`),
     teams: {
       list: () => request<{ teams: any[]; count: number }>("/servers/teams"),
@@ -117,7 +116,14 @@ export const api = {
   clusters: {
     list: () => request<{ clusters: any[]; count: number }>("/clusters"),
     get: (id: number) => request<any>(`/clusters/${id}`),
-    design: (data: { name: string; manager_server_id: number; worker_server_ids?: number[]; cni_plugin?: string }) =>
+    design: (data: {
+      name: string;
+      type?: string;
+      manager_server_id: number;
+      worker_server_ids?: number[];
+      cni_plugin?: string;
+      domain?: string;
+    }) =>
       request<{ cluster_id: number; message: string }>("/clusters/design", {
         method: "POST",
         body: JSON.stringify(data),
@@ -126,12 +132,19 @@ export const api = {
 
   // Applications
   applications: {
-    list: () => request<any[]>("/applications"),
+    list: (clusterID?: number) =>
+      request<{ applications: any[]; count: number }>(
+        clusterID ? `/applications?cluster_id=${clusterID}` : "/applications"
+      ),
     get: (id: number) => request<any>(`/applications/${id}`),
     create: (data: any) =>
       request<any>("/applications", { method: "POST", body: JSON.stringify(data) }),
     update: (id: number, data: any) =>
       request<any>(`/applications/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<any>(`/applications/${id}`, { method: "DELETE" }),
+    redeploy: (id: number) =>
+      request<any>(`/applications/${id}/redeploy`, { method: "POST" }),
   },
 
   // Deployments
@@ -139,6 +152,42 @@ export const api = {
     list: () => request<any[]>("/deployments"),
     get: (id: number) => request<any>(`/deployments/${id}`),
     logs: (id: number) => request<any>(`/deployments/${id}/logs`),
+  },
+
+  // Environments
+  environments: {
+    list: (clusterID?: number) =>
+      request<{ environments: any[]; count: number }>(
+        clusterID ? `/environments?cluster_id=${clusterID}` : "/environments"
+      ),
+    get: (id: number) => request<any>(`/environments/${id}`),
+    create: (data: { cluster_id: number; scope: string; name: string; variables: Record<string, string> }) =>
+      request<any>("/environments", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: any) =>
+      request<any>(`/environments/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<any>(`/environments/${id}`, { method: "DELETE" }),
+    push: (id: number) =>
+      request<any>(`/environments/${id}/push`, { method: "POST" }),
+  },
+
+  // Nginx
+  nginx: {
+    list: (serverID?: number) =>
+      request<{ configs: any[]; count: number }>(
+        serverID ? `/nginx?server_id=${serverID}` : "/nginx"
+      ),
+    create: (data: {
+      server_id: number;
+      domain: string;
+      upstream_port: number;
+      ssl_enabled?: boolean;
+      lets_encrypt?: boolean;
+      application_id?: number;
+    }) =>
+      request<any>("/nginx", { method: "POST", body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<any>(`/nginx/${id}`, { method: "DELETE" }),
   },
 
   // Metadata

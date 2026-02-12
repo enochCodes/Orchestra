@@ -3,10 +3,11 @@ package api
 import (
 	"fmt"
 	"log"
+	"strconv"
 
+	tasks "github.com/enochcodes/orchestra/backend/internal/engine"
 	"github.com/enochcodes/orchestra/backend/internal/models"
 	"github.com/enochcodes/orchestra/backend/internal/services"
-	"github.com/enochcodes/orchestra/backend/internal/tasks"
 	"github.com/gofiber/fiber/v2"
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
@@ -27,10 +28,14 @@ func NewApplicationHandler(db *gorm.DB, client *asynq.Client) *ApplicationHandle
 // List applications
 func (h *ApplicationHandler) List(c *fiber.Ctx) error {
 	var apps []models.Application
-	if err := h.DB.Preload("Cluster").Find(&apps).Error; err != nil {
+	query := h.DB.Preload("Cluster")
+	if clusterID := c.Query("cluster_id"); clusterID != "" {
+		query = query.Where("cluster_id = ?", clusterID)
+	}
+	if err := query.Find(&apps).Error; err != nil {
 		return err
 	}
-	return c.JSON(apps)
+	return c.JSON(fiber.Map{"applications": apps, "count": len(apps)})
 }
 
 // Get application by ID
@@ -52,12 +57,15 @@ func (h *ApplicationHandler) Update(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		Name        *string               `json:"name"`
-		Replicas    *int                  `json:"replicas"`
-		BuildCmd    *string              `json:"build_cmd"`
-		StartCmd    *string              `json:"start_cmd"`
-		EnvVars     *models.ScopedEnvs   `json:"env_vars"`
-		Status      *string              `json:"status"`
+		Name     *string            `json:"name"`
+		Replicas *int               `json:"replicas"`
+		BuildCmd *string            `json:"build_cmd"`
+		StartCmd *string            `json:"start_cmd"`
+		EnvVars  *models.ScopedEnvs `json:"env_vars"`
+		Status   *string            `json:"status"`
+		Port     *int               `json:"port"`
+		Domain   *string            `json:"domain"`
+		Branch   *string            `json:"branch"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
@@ -81,6 +89,15 @@ func (h *ApplicationHandler) Update(c *fiber.Ctx) error {
 	if req.Status != nil {
 		app.Status = *req.Status
 	}
+	if req.Port != nil {
+		app.Port = *req.Port
+	}
+	if req.Domain != nil {
+		app.Domain = *req.Domain
+	}
+	if req.Branch != nil {
+		app.Branch = *req.Branch
+	}
 
 	if err := h.DB.Save(&app).Error; err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to update application")
@@ -95,19 +112,20 @@ func (h *ApplicationHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	// Default status
 	app.Status = "pending"
 	if app.Replicas == 0 {
 		app.Replicas = 1
 	}
+	if app.Namespace == "" {
+		app.Namespace = "default"
+	}
 
-	// Save to DB
 	if err := h.DB.Create(&app).Error; err != nil {
 		log.Printf("Failed to create app: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create application")
 	}
 
-	// Trigger Deployment Task
+	// Trigger deployment
 	task, err := tasks.NewDeployAppTask(app.ID)
 	if err != nil {
 		log.Printf("Failed to create deploy task: %v", err)
@@ -127,4 +145,50 @@ func (h *ApplicationHandler) Create(c *fiber.Ctx) error {
 		"application", app.ID, userID, nil)
 
 	return c.Status(fiber.StatusCreated).JSON(app)
+}
+
+// Redeploy triggers a new deployment for an existing application
+func (h *ApplicationHandler) Redeploy(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid ID")
+	}
+
+	var app models.Application
+	if err := h.DB.First(&app, uint(id)).Error; err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "Application not found")
+	}
+
+	task, err := tasks.NewDeployAppTask(app.ID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to create deploy task")
+	}
+	if _, err := h.AsynqClient.Enqueue(task); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to enqueue deploy task")
+	}
+
+	h.DB.Model(&app).Update("status", "pending")
+
+	var userID *uint
+	if u := c.Locals("user"); u != nil {
+		usr := u.(*models.User)
+		userID = &usr.ID
+	}
+	_ = services.LogActivity(h.DB, models.ActivityTypeAppRedeployed,
+		fmt.Sprintf("Application '%s' redeployment triggered", app.Name),
+		"application", app.ID, userID, nil)
+
+	return c.JSON(fiber.Map{"message": "redeployment queued"})
+}
+
+// Delete removes an application
+func (h *ApplicationHandler) Delete(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid ID")
+	}
+	if err := h.DB.Delete(&models.Application{}, uint(id)).Error; err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to delete")
+	}
+	return c.JSON(fiber.Map{"message": "deleted"})
 }

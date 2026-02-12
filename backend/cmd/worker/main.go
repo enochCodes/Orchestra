@@ -5,25 +5,22 @@ import (
 
 	"github.com/enochcodes/orchestra/backend/internal/config"
 	"github.com/enochcodes/orchestra/backend/internal/database"
-	"github.com/enochcodes/orchestra/backend/internal/tasks"
+	tasks "github.com/enochcodes/orchestra/backend/internal/engine"
 	"github.com/hibiken/asynq"
 )
 
 func main() {
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Connect to database (workers need DB access for task handlers)
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	log.Println("Worker: Database connected")
 
-	// Initialize Asynq server
 	srv := asynq.NewServer(
 		asynq.RedisClientOpt{
 			Addr:     cfg.RedisAddr,
@@ -33,43 +30,83 @@ func main() {
 		asynq.Config{
 			Concurrency: 10,
 			Queues: map[string]int{
-				"provisioning": 6, // SSH tasks (high latency, prioritize)
-				"deployment":   3, // K8s API tasks (low latency)
+				"provisioning": 6,
+				"deployment":   3,
 				"default":      1,
 			},
 		},
 	)
 
-	// Register task handlers
+	// SSH provisioning
 	sshHandler := &tasks.SSHProvisionHandler{
 		DB:            db,
 		EncryptionKey: cfg.EncryptionKey,
 	}
 
+	// K8s cluster tasks
 	k8sHandler := &tasks.K8sTaskHandler{
 		DB:            db,
 		EncryptionKey: cfg.EncryptionKey,
 	}
 
-	// App tasks
+	// Docker Swarm tasks
+	swarmHandler := &tasks.SwarmTaskHandler{
+		DB:            db,
+		EncryptionKey: cfg.EncryptionKey,
+	}
+
+	// Manual cluster tasks
+	manualHandler := &tasks.ManualTaskHandler{
+		DB:            db,
+		EncryptionKey: cfg.EncryptionKey,
+	}
+
+	// Application deployment
 	appHandler := &tasks.AppTaskHandler{
-		DB: db,
+		DB:            db,
+		EncryptionKey: cfg.EncryptionKey,
+	}
+
+	// Nginx provisioning
+	nginxHandler := &tasks.NginxTaskHandler{
+		DB:            db,
+		EncryptionKey: cfg.EncryptionKey,
+	}
+
+	// Environment push
+	envHandler := &tasks.EnvTaskHandler{
+		DB:            db,
+		EncryptionKey: cfg.EncryptionKey,
 	}
 
 	mux := asynq.NewServeMux()
 
-	// SSH provisioning tasks
+	// SSH
 	mux.HandleFunc(tasks.TypePreflightCheck, sshHandler.HandlePreflightCheck)
 	mux.HandleFunc(tasks.TypeInstallK3s, sshHandler.HandleInstallK3s)
 
-	// K8s cluster tasks
+	// K8s
 	mux.HandleFunc(tasks.TypeDesignateManager, k8sHandler.HandleDesignateManager)
 	mux.HandleFunc(tasks.TypeJoinWorker, k8sHandler.HandleJoinWorker)
 
-	// Application Deployment
+	// Docker Swarm
+	mux.HandleFunc(tasks.TypeSwarmInit, swarmHandler.HandleSwarmInit)
+	mux.HandleFunc(tasks.TypeSwarmJoin, swarmHandler.HandleSwarmJoin)
+
+	// Manual
+	mux.HandleFunc(tasks.TypeManualClusterSetup, manualHandler.HandleManualClusterSetup)
+
+	// Application
 	mux.HandleFunc(tasks.TypeDeployApplication, appHandler.HandleDeployAppTask)
 
+	// Nginx
+	mux.HandleFunc(tasks.TypeNginxProvision, nginxHandler.HandleNginxProvision)
+
+	// Environment
+	mux.HandleFunc(tasks.TypePushEnv, envHandler.HandlePushEnv)
+
 	log.Println("Orchestra Worker starting...")
+	log.Println("  Tasks: preflight, k3s, swarm, manual, deploy, nginx, env")
 	log.Println("  Queues: provisioning (6), deployment (3), default (1)")
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("Worker failed: %v", err)

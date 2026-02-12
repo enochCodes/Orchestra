@@ -27,19 +27,23 @@ type Application struct {
 	Namespace string  `gorm:"size:255;not null" json:"namespace"`
 
 	// Deployment Source
-	SourceType   DeploymentSourceType `gorm:"size:20;default:'git'" json:"source_type"`
-	RepoURL      string               `gorm:"size:500" json:"repo_url"`
-	Branch       string               `gorm:"size:100;default:'main'" json:"branch"`
-	DockerImage  string               `gorm:"size:500" json:"docker_image"`  // for docker_image source
-	ManualPath   string               `gorm:"size:500" json:"manual_path"`  // for manual upload path
+	SourceType  DeploymentSourceType `gorm:"size:20;default:'git'" json:"source_type"`
+	RepoURL     string               `gorm:"size:500" json:"repo_url"`
+	Branch      string               `gorm:"size:100;default:'main'" json:"branch"`
+	DockerImage string               `gorm:"size:500" json:"docker_image"` // for docker_image source
+	ManualPath  string               `gorm:"size:500" json:"manual_path"`  // for manual upload path
 
 	// Build Configuration
 	BuildType string     `gorm:"size:50;default:'docker'" json:"build_type"` // go, node, python, docker, nextjs-static
-	BuildCmd  string     `gorm:"size:255" json:"build_cmd"`
-	StartCmd  string     `gorm:"size:255" json:"start_cmd"`
+	BuildCmd  string     `gorm:"size:500" json:"build_cmd"`
+	StartCmd  string     `gorm:"size:500" json:"start_cmd"`
 	EnvVars   ScopedEnvs `gorm:"type:jsonb" json:"env_vars"`
 
-	Replicas  int            `gorm:"default:1" json:"replicas"`
+	// Runtime
+	Port     int    `gorm:"default:0" json:"port"`
+	Domain   string `gorm:"size:255" json:"domain,omitempty"`
+	Replicas int    `gorm:"default:1" json:"replicas"`
+
 	Status    string         `gorm:"size:20;default:'pending'" json:"status"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

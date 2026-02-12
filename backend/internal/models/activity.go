@@ -10,12 +10,15 @@ import (
 type ActivityType string
 
 const (
-	ActivityTypeServerRegistered ActivityType = "server_registered"
-	ActivityTypeClusterCreated   ActivityType = "cluster_created"
+	ActivityTypeServerRegistered   ActivityType = "server_registered"
+	ActivityTypeClusterCreated     ActivityType = "cluster_created"
 	ActivityTypeClusterProvisioned ActivityType = "cluster_provisioned"
-	ActivityTypeAppDeployed      ActivityType = "app_deployed"
-	ActivityTypeDeploymentFailed ActivityType = "deployment_failed"
-	ActivityTypeUserLogin        ActivityType = "user_login"
+	ActivityTypeAppDeployed        ActivityType = "app_deployed"
+	ActivityTypeDeploymentFailed   ActivityType = "deployment_failed"
+	ActivityTypeUserLogin          ActivityType = "user_login"
+	ActivityTypeEnvPushed          ActivityType = "env_pushed"
+	ActivityTypeNginxConfigured    ActivityType = "nginx_configured"
+	ActivityTypeAppRedeployed      ActivityType = "app_redeployed"
 )
 
 // Activity represents an audit/activity log entry.
@@ -25,8 +28,8 @@ type Activity struct {
 	Message   string       `gorm:"type:text;not null" json:"message"`
 	Entity    string       `gorm:"size:50" json:"entity"` // server, cluster, application, deployment
 	EntityID  uint         `json:"entity_id"`
-	UserID    *uint         `json:"user_id,omitempty"`
-	Metadata  string       `gorm:"type:jsonb" json:"metadata,omitempty"`
+	UserID    *uint        `json:"user_id,omitempty"`
+	Metadata  string       `gorm:"type:text" json:"metadata,omitempty"`
 	CreatedAt time.Time    `json:"created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }

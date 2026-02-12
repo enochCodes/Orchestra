@@ -16,14 +16,13 @@ const maxRetries = 15
 const retryDelay = 3 * time.Second
 
 // Connect establishes a connection to PostgreSQL and runs auto-migrations.
-// Retries up to 15 times with 3s delay for Docker startup.
 func Connect(databaseURL string) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		db, err = gorm.Open(postgres.Open(databaseURL), &gorm.Config{
-			Logger:                           logger.Default.LogMode(logger.Info),
-			DisableForeignKeyConstraintWhenMigrating: true, // Resolves Cluster<->Server circular FK + concurrent migration races
+			Logger:                                   logger.Default.LogMode(logger.Info),
+			DisableForeignKeyConstraintWhenMigrating: true,
 		})
 		if err != nil {
 			log.Printf("Database connection attempt %d/%d failed: %v", i+1, maxRetries, err)
@@ -31,7 +30,6 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 			continue
 		}
 
-		// Verify connection with ping
 		sqlDB, err := db.DB()
 		if err != nil {
 			log.Printf("Database connection attempt %d/%d: failed to get DB: %v", i+1, maxRetries, err)
@@ -48,7 +46,6 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		}
 		cancel()
 
-		// Connection OK
 		log.Println("Connected to PostgreSQL database")
 		break
 	}
@@ -56,8 +53,19 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
 	}
 
-	// Auto-migrate models in explicit order. Server before Cluster: Cluster has Workers []Server
-	// (foreignKey:ClusterID), so GORM may alter servers table when migrating Cluster.
+	// Fix columns that AutoMigrate won't alter (jsonb -> text for empty-string compat).
+	// These are idempotent — if already text, PostgreSQL returns a no-op.
+	fixes := []string{
+		`DO $$ BEGIN ALTER TABLE servers ALTER COLUMN preflight_report TYPE text USING preflight_report::text; EXCEPTION WHEN undefined_table THEN NULL; END $$;`,
+		`DO $$ BEGIN ALTER TABLE activities ALTER COLUMN metadata TYPE text USING metadata::text; EXCEPTION WHEN undefined_table THEN NULL; END $$;`,
+	}
+	for _, fix := range fixes {
+		if err := db.Exec(fix).Error; err != nil {
+			log.Printf("Column fix warning: %v", err)
+		}
+	}
+
+	// Migrate in dependency order. constraint:false on circular refs avoids FK issues.
 	modelsToMigrate := []interface{}{
 		&models.User{},
 		&models.ServerTeam{},
@@ -68,6 +76,8 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		&models.ApplicationMembership{},
 		&models.Deployment{},
 		&models.Activity{},
+		&models.Environment{},
+		&models.NginxConfig{},
 	}
 	for _, m := range modelsToMigrate {
 		if err := db.AutoMigrate(m); err != nil {
