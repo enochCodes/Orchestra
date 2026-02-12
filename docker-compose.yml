@@ -31,11 +31,11 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
+  server:
     build:
-      context: ./backend
+      context: ./core
       dockerfile: Dockerfile
-    command: ["/app/api"]
+    command: ["/app/server"]
     restart: always
     environment:
       SERVER_PORT: "8080"
@@ -62,7 +62,7 @@ services:
 
   worker:
     build:
-      context: ./backend
+      context: ./core
       dockerfile: Dockerfile
     command: ["/app/worker"]
     restart: always
@@ -73,12 +73,12 @@ services:
       REDIS_DB: "0"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}"
     depends_on:
-      api:
+      server:
         condition: service_healthy
 
-  frontend:
+  ui:
     build:
-      context: ./frontend
+      context: ./ui
       dockerfile: Dockerfile
     restart: always
     environment:
@@ -86,7 +86,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      api:
+      server:
         condition: service_healthy
 
 volumes:

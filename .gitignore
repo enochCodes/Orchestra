@@ -1,6 +1,6 @@
 # Binaries
 /bin/
-/backend/bin/
+/core/bin/
 *.exe
 *.dll
 *.so
@@ -29,7 +29,7 @@ dist/
 .env.production.local
 
 # Go
-/backend/vendor/
+/core/vendor/
 go.work
 
 # Env

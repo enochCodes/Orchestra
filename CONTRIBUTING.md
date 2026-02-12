@@ -1,70 +1,80 @@
-Contributing to Orchestra
+# Contributing to Orchestra
 
-First off, thanks for taking the time to contribute! 🎉
+First off, thanks for taking the time to contribute!
+
+## Project Structure
+
+```
+Orchestra/
+├── core/           # Go backend — API server, worker, engine
+│   ├── cmd/
+│   │   ├── server/     # API server entrypoint
+│   │   └── worker/     # Background worker entrypoint
+│   ├── internal/
+│   │   ├── handler/    # HTTP handlers and routing
+│   │   ├── model/      # Domain models (GORM)
+│   │   ├── service/    # Business logic
+│   │   ├── engine/     # Provisioning engine (SSH tasks, K8s, Swarm)
+│   │   ├── buildpack/  # Dockerfile generation
+│   │   ├── config/     # Configuration
+│   │   └── store/      # Database connection and migrations
+│   └── pkg/
+│       └── ssh/        # SSH client and preflight checks
+├── ui/             # Next.js frontend
+│   └── src/
+│       ├── app/        # Page routes
+│       ├── components/ # React components
+│       └── lib/        # API client, auth, utilities
+├── docker-compose.yml
+└── Makefile
+```
 
 ## How to Contribute
 
 ### Reporting Bugs
 
-This section guides you through submitting a bug report for Orchestra.
-
-**Before Submitting a Bug Report**
-
-1.  **Check existing issues** to see if the bug has already been reported.
-2.  **Verify validity**: Ensure the issue is reproducible and not caused by misconfiguration.
-
-**How to Submit a Good Bug Report**
-
-Explain the problem and include additional details to help maintainers reproduce the problem:
-
--   **Use a clear and descriptive title** for the issue to identify the problem.
--   **Describe the exact steps which reproduce the problem** in as many details as possible.
--   **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
--   **Explain which behavior you expected to see instead and why.**
--   **Include screenshots and animated GIFs** which show you following the reproduction steps.
-
-### Suggesting Enhancements
-
-This section guides you through submitting an enhancement suggestion for Orchestra, including completely new features and minor improvements to existing functionality.
-
-**How to Submit a Good Enhancement Suggestion**
-
--   **Use a clear and descriptive title** for the issue to identify the suggestion.
--   **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
--   **Explain why this enhancement would be useful** to most Orchestra users.
+1. **Check existing issues** to see if the bug has already been reported.
+2. **Verify validity**: Ensure the issue is reproducible.
+3. **Use a clear and descriptive title**.
+4. **Describe exact reproduction steps**.
+5. **Include screenshots** if applicable.
 
 ### Pull Requests
 
-The process described here has several goals:
-
--   Maintain Orchestra's quality
--   Fix problems that are important to users
--   Engage the community in working toward the best possible Orchestra
-
-**Please follow these steps to have your contribution considered by the maintainers:**
-
-1.  Follow all instructions in the template
-2.  Follow the style guides (Go standard style, Prettier for JS/TS)
-3.  After you submit your pull request, verify that all status checks are passing
-
-## Styleguides
+1. Follow Go standard style (`gofmt`) for core code
+2. Follow Prettier for UI code
+3. Ensure `go vet ./...` passes
+4. Ensure `npm run lint` passes in `ui/`
+5. Write tests for new functionality
 
 ### Git Commit Messages
 
--   **Use the present tense** ("Add feature" not "Added feature")
--   **Use the imperative mood** ("Move cursor to..." not "Moves cursor to...")
--   **Limit the first line to 72 characters or less**
--   **Reference issues and pull requests liberally** after the first line
+- Use present tense ("Add feature" not "Added feature")
+- Use imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit first line to 72 characters
+- Reference issues after the first line
 
-### Go Styleguide
+## Development
 
--   All Go code is formatted with `gofmt`.
--   Use `golangci-lint` to check your code.
+### Core (Go)
 
-### JavaScript Styleguide
+```bash
+make dev-deps           # Start DB and Redis
+cd core
+cp .env.example .env    # Set ENCRYPTION_KEY
+go run cmd/server/main.go
+go run cmd/worker/main.go
+```
 
--   All JavaScript code is formatted with Prettier.
+### UI (Next.js)
+
+```bash
+cd ui
+cp .env.example .env
+npm install
+npm run dev
+```
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the MIT License.
