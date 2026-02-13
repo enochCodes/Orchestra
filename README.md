@@ -116,6 +116,7 @@ npm run test:e2e
 ```
 
 ## Contributing
+## autor @enochCodes | henoksamson57@gmail.com
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
