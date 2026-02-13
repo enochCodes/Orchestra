@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,25 +22,57 @@ interface DialogProps {
 export function Dialog({ open = false, onOpenChange = () => { }, children }: DialogProps) {
     return (
         <DialogContext.Provider value={{ open, onOpenChange }}>
-            {open && children}
+            {open && <DialogPortal>{children}</DialogPortal>}
         </DialogContext.Provider>
     );
+}
+
+/** Renders dialog children into document.body via a portal so they escape any parent overflow/transform. */
+function DialogPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = React.useState(false);
+    React.useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+    return createPortal(children, document.body);
 }
 
 export function DialogContent({ className, children }: React.HTMLAttributes<HTMLDivElement>) {
     const { onOpenChange } = React.useContext(DialogContext);
 
+    // Close on Escape key
+    React.useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onOpenChange(false);
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onOpenChange]);
+
+    // Prevent body scroll while dialog is open
+    React.useEffect(() => {
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = ""; };
+    }, []);
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
                 onClick={() => onOpenChange(false)}
             />
-            <div className={cn("relative z-50 w-full max-w-lg bg-black border border-zinc-800 rounded-xl shadow-2xl animate-in zoom-in-95 duration-200 p-6", className)}>
+            {/* Content — centered, scrollable when tall */}
+            <div
+                className={cn(
+                    "relative z-[10000] w-full max-w-lg max-h-[85vh] overflow-y-auto",
+                    "bg-black border border-zinc-800 rounded-xl shadow-2xl",
+                    "animate-in zoom-in-95 duration-200 p-6",
+                    className
+                )}
+            >
                 {children}
                 <button
                     onClick={() => onOpenChange(false)}
-                    className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-zinc-800"
+                    className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
                 >
                     <X className="h-4 w-4 text-zinc-400" />
                     <span className="sr-only">Close</span>
