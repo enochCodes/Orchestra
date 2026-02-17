@@ -112,6 +112,42 @@ func (h *ApplicationHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	// Validation for real server deployment
+	if app.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "name is required")
+	}
+	if app.ClusterID == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "cluster_id is required")
+	}
+	switch app.SourceType {
+	case model.DeploymentSourceGit:
+		if app.RepoURL == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "repo_url is required for git source")
+		}
+	case model.DeploymentSourceDocker:
+		if app.DockerImage == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "docker_image is required for docker_image source")
+		}
+	case model.DeploymentSourceManual:
+		if app.ManualPath == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "manual_path is required for manual source")
+		}
+	default:
+		app.SourceType = model.DeploymentSourceGit
+	}
+	if app.Branch == "" {
+		app.Branch = "main"
+	}
+
+	// Verify cluster exists and is active
+	var cluster model.Cluster
+	if err := h.DB.First(&cluster, app.ClusterID).Error; err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "cluster not found")
+	}
+	if cluster.Status != model.ClusterStatusActive {
+		return fiber.NewError(fiber.StatusBadRequest, "cluster must be active before deploying applications")
+	}
+
 	app.Status = "pending"
 	if app.Replicas == 0 {
 		app.Replicas = 1

@@ -110,10 +110,23 @@ npm run dev
 ### E2E Testing (Playwright)
 
 ```bash
+# Start full stack first
+docker compose up -d
+
 cd ui
 npx playwright install
 npm run test:e2e
 ```
+
+See [ui/e2e/README.md](ui/e2e/README.md) and [QA_TESTING.md](QA_TESTING.md) for full QA and UAT guides.
+
+## Testing for v1 Release
+
+Orchestra v1 is ready for real-server testing. Use [QA_TESTING.md](QA_TESTING.md) for:
+
+- Manual QA checklist (server registration, cluster design, app deployment)
+- End-to-end UAT flow
+- Troubleshooting guide
 
 ## Contributing
 ## autor @enochCodes | henoksamson57@gmail.com

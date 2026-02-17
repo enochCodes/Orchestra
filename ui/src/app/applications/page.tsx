@@ -144,6 +144,7 @@ export default function ApplicationsPage() {
       name: formData.name,
       cluster_id: clusterId,
       namespace: "default",
+      replicas: 1,
       build_type: formData.frameworkId || "docker",
       build_cmd: formData.buildCmd,
       start_cmd: formData.startCmd,
@@ -550,8 +551,10 @@ export default function ApplicationsPage() {
                 onClick={() => setStep(step + 1)}
                 disabled={
                   !formData.name ||
+                  !formData.cluster_id ||
                   (formData.source_type === "git" && !formData.repo) ||
-                  (formData.source_type === "docker_image" && !formData.docker_image)
+                  (formData.source_type === "docker_image" && !formData.docker_image) ||
+                  (formData.source_type === "manual" && !formData.manual_path)
                 }
               >
                 Continue <ChevronRight size={14} className="ml-1" />

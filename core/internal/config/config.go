@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -56,7 +57,10 @@ func Load() (*Config, error) {
 	}
 
 	if cfg.JWTSecret == "" || cfg.JWTSecret == "orchestra-jwt-secret-change-in-production" {
-		// Allow default for dev; in prod, require explicit secret
+		log.Println("WARNING: Using default JWT_SECRET. Set a strong secret in production.")
+	}
+	if cfg.SkipAuth {
+		log.Println("WARNING: SKIP_AUTH=true — authentication is disabled. Do not use in production.")
 	}
 
 	return cfg, nil

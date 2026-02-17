@@ -2,18 +2,20 @@
 
 ## Prerequisites
 
-1. **Backend API running** – E2E tests require the Orchestra API to be available:
+1. **API + DB + Redis running** — E2E tests require the Orchestra API:
    ```bash
-   # From project root - start db, redis, and api
-   make dev-deps && cd backend && go run cmd/api/main.go
-   # Or: docker-compose up -d db redis api
+   # From project root
+   docker compose up -d
+   # Or for local dev: make dev-deps, then run core server + worker
    ```
 
-2. **Frontend .env** – Ensure `NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1` in `.env`
+2. **UI .env** — Ensure `NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1` in `ui/.env`
 
 ## Run Tests
 
 ```bash
+cd ui
+
 # Install Playwright browsers (first time only)
 npx playwright install
 
@@ -24,7 +26,13 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
+## Test Suites
+
+- **auth.spec.ts** — Login, invalid credentials, protected routes
+- **navigation.spec.ts** — Basic navigation after login
+- **flows.spec.ts** — Full flow: Servers, Clusters, Applications, Deployments, Environments, Monitoring, Settings
+
 ## Environment
 
-- `PLAYWRIGHT_BASE_URL` – App URL (default: http://localhost:3000)
-- `PLAYWRIGHT_API_URL` – API URL for reference (default: http://localhost:8080)
+- `PLAYWRIGHT_BASE_URL` — App URL (default: http://localhost:3000)
+- `CI` — When set, uses 2 retries and 1 worker

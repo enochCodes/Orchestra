@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"time"
 
 	"github.com/enochcodes/orchestra/core/internal/service"
@@ -33,6 +34,30 @@ func SetupRouter(db *gorm.DB, asynqClient *asynq.Client, encryptionKey, jwtSecre
 		return c.JSON(fiber.Map{
 			"status":  "healthy",
 			"service": "orchestra-api",
+		})
+	})
+
+	// Readiness check — verifies DB and Redis connectivity (for load balancers / k8s probes)
+	app.Get("/ready", func(c *fiber.Ctx) error {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "not_ready",
+				"error":  "database unavailable",
+			})
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := sqlDB.PingContext(ctx); err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "not_ready",
+				"error":  "database ping failed",
+			})
+		}
+		// Redis is used by Asynq; optional for readiness if API can serve without it
+		return c.JSON(fiber.Map{
+			"status": "ready",
+			"database": "ok",
 		})
 	})
 

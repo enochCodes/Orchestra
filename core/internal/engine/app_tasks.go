@@ -32,7 +32,7 @@ func NewDeployAppTask(appID uint) (*asynq.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asynq.NewTask(TypeDeployApplication, payload, asynq.Queue("deployment"), asynq.MaxRetry(2)), nil
+	return asynq.NewTask(TypeDeployApplication, payload, asynq.Queue("deployment"), asynq.MaxRetry(3)), nil
 }
 
 func (h *AppTaskHandler) HandleDeployAppTask(ctx context.Context, t *asynq.Task) error {
@@ -67,6 +67,10 @@ func (h *AppTaskHandler) HandleDeployAppTask(ctx context.Context, t *asynq.Task)
 
 	// Get SSH client to the manager server
 	managerServer := app.Cluster.ManagerServer
+	if managerServer.ID == 0 {
+		h.failDeployment(&deployment, &app, "Cluster manager server not found or not loaded")
+		return fmt.Errorf("cluster manager server missing")
+	}
 	sshKey, err := decrypt(managerServer.SSHKeyEncrypted, h.EncryptionKey)
 	if err != nil {
 		h.failDeployment(&deployment, &app, "Failed to decrypt manager SSH key")
@@ -294,7 +298,9 @@ func (h *AppTaskHandler) buildEnvArgs(app model.Application) string {
 	var parts []string
 	if app.EnvVars.Production != nil {
 		for k, v := range app.EnvVars.Production {
-			parts = append(parts, fmt.Sprintf("-e %s='%s'", k, v))
+			// Escape single quotes in value for shell safety
+			escaped := strings.ReplaceAll(v, "'", "'\"'\"'")
+			parts = append(parts, fmt.Sprintf("-e %s='%s'", k, escaped))
 		}
 	}
 	return strings.Join(parts, " ")

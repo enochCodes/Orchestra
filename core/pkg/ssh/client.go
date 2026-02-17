@@ -91,7 +91,7 @@ func NewClient(host string, port int, user string, privateKey []byte, passphrase
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: implement known_hosts verification
-		Timeout:         30 * time.Second,
+		Timeout:         60 * time.Second,            // Allow time for slow networks / high-latency links
 	}
 
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
