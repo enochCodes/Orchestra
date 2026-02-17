@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/enochcodes/orchestra/core/internal/config"
 )
 
 // PreflightReport contains the results of all pre-flight checks on a server.
@@ -101,12 +103,15 @@ func RunPreflightCheck(client *Client) (*PreflightReport, error) {
 	}
 
 	// 8. Check essential kernel modules
-	requiredModules := []string{"overlay", "br_netfilter"}
-	for _, mod := range requiredModules {
-		cmd := fmt.Sprintf("lsmod | grep -q %s && echo 'loaded' || echo 'not_loaded'", mod)
-		result, err = client.ExecuteCommand(cmd)
-		if err != nil || strings.TrimSpace(result.Stdout) != "loaded" {
-			errors = append(errors, fmt.Sprintf("kernel module %s is not loaded", mod))
+	// if its run on local docker based server dont check this
+	if !config.AppConfig.IsLocalDocker {
+		requiredModules := []string{"overlay", "br_netfilter"}
+		for _, mod := range requiredModules {
+			cmd := fmt.Sprintf("lsmod | grep -q %s && echo 'loaded' || echo 'not_loaded'", mod)
+			result, err = client.ExecuteCommand(cmd)
+			if err != nil || strings.TrimSpace(result.Stdout) != "loaded" {
+				errors = append(errors, fmt.Sprintf("kernel module %s is not loaded", mod))
+			}
 		}
 	}
 

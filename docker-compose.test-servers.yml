@@ -1,0 +1,43 @@
+# Test servers for Orchestra — SSH-accessible containers acting as "physical" servers
+# Run: docker compose -f docker-compose.yml -f docker-compose.test-servers.yml up -d
+# Requires: ./scripts/generate-ssh-keys.sh (run first to create keys/)
+
+services:
+  test-server-1:
+    build:
+      context: ./test-servers
+      dockerfile: Dockerfile
+    hostname: test-server-1
+    volumes:
+      - ./keys:/keys:ro
+    environment:
+      ORCHESTRA_PUBLIC_KEY: ${ORCHESTRA_PUBLIC_KEY:-}
+    networks:
+      - default
+    restart: unless-stopped
+
+  test-server-2:
+    build:
+      context: ./test-servers
+      dockerfile: Dockerfile
+    hostname: test-server-2
+    volumes:
+      - ./keys:/keys:ro
+    environment:
+      ORCHESTRA_PUBLIC_KEY: ${ORCHESTRA_PUBLIC_KEY:-}
+    networks:
+      - default
+    restart: unless-stopped
+
+  test-server-3:
+    build:
+      context: ./test-servers
+      dockerfile: Dockerfile
+    hostname: test-server-3
+    volumes:
+      - ./keys:/keys:ro
+    environment:
+      ORCHESTRA_PUBLIC_KEY: ${ORCHESTRA_PUBLIC_KEY:-}
+    networks:
+      - default
+    restart: unless-stopped

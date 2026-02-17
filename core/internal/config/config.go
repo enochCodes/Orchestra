@@ -20,6 +20,7 @@ type Config struct {
 	RedisPassword string
 	RedisDB       int
 
+	IsLocalDocker bool
 	// Security
 	EncryptionKey    string // 32-byte key for AES-256 encryption of SSH keys & kubeconfig
 	SSHKeyPassphrase string
@@ -27,9 +28,11 @@ type Config struct {
 	SkipAuth         bool   // If true, skip JWT auth (dev only)
 }
 
+var AppConfig *Config
+
 // Load reads configuration from environment variables.
 func Load() (*Config, error) {
-	cfg := &Config{
+	AppConfig = &Config{
 		ServerPort:       getEnv("SERVER_PORT", "8080"),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://orchestra:orchestra_password@localhost:5432/orchestra?sslmode=disable"),
 		RedisAddr:        getEnv("REDIS_ADDR", "localhost:6379"),
@@ -38,32 +41,33 @@ func Load() (*Config, error) {
 		SSHKeyPassphrase: getEnv("SSH_KEY_PASSPHRASE", ""),
 		JWTSecret:        getEnv("JWT_SECRET", "orchestra-jwt-secret-change-in-production"),
 		SkipAuth:         getEnv("SKIP_AUTH", "false") == "true",
+		IsLocalDocker:    getEnv("IS_LOCAL_DOCKER", "true") == "true",
 	}
 
 	redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid REDIS_DB value: %w", err)
 	}
-	cfg.RedisDB = redisDB
+	AppConfig.RedisDB = redisDB
 
 	// Validate DATABASE_URL format (non-empty)
-	if cfg.DatabaseURL == "" {
+	if AppConfig.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL cannot be empty")
 	}
 
 	// ENCRYPTION_KEY: default allowed for dev; use proper key in production
-	if len(cfg.EncryptionKey) != 64 {
+	if len(AppConfig.EncryptionKey) != 64 {
 		return nil, fmt.Errorf("ENCRYPTION_KEY must be 64 hex chars (32 bytes). Generate with: openssl rand -hex 32")
 	}
 
-	if cfg.JWTSecret == "" || cfg.JWTSecret == "orchestra-jwt-secret-change-in-production" {
+	if AppConfig.JWTSecret == "" || AppConfig.JWTSecret == "orchestra-jwt-secret-change-in-production" {
 		log.Println("WARNING: Using default JWT_SECRET. Set a strong secret in production.")
 	}
-	if cfg.SkipAuth {
+	if AppConfig.SkipAuth {
 		log.Println("WARNING: SKIP_AUTH=true — authentication is disabled. Do not use in production.")
 	}
 
-	return cfg, nil
+	return AppConfig, nil
 }
 
 func getEnv(key, fallback string) string {

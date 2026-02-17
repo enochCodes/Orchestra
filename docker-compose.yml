@@ -44,6 +44,7 @@ services:
       ENCRYPTION_KEY: "${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}"
       JWT_SECRET: "${JWT_SECRET:-orchestra-jwt-secret-change-in-production}"
       SKIP_AUTH: "${SKIP_AUTH:-true}"
+      IS_LOCAL_DOCKER: "true"
     ports:
       - "8080:8080"
     depends_on:

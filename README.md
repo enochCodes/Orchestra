@@ -120,6 +120,24 @@ npm run test:e2e
 
 See [ui/e2e/README.md](ui/e2e/README.md) and [QA_TESTING.md](QA_TESTING.md) for full QA and UAT guides.
 
+## Testing with Local Test Servers
+
+Test Orchestra end-to-end without real hardware using Docker-based SSH containers:
+
+```bash
+# 1. Generate SSH keys (creates keys/id_rsa and keys/id_rsa.pub)
+make generate-keys
+
+# 2. Start Orchestra + 3 test server containers
+make up-test-servers
+
+# 3. Open http://localhost:3000, register servers with:
+#    IP: test-server-1, test-server-2, test-server-3 | Port: 22 | User: orchestra | Key: paste keys/id_rsa
+# 4. Design clusters and deploy apps
+```
+
+See [TESTING_WITH_SERVERS.md](TESTING_WITH_SERVERS.md) for the full guide (key setup, registration steps, troubleshooting).
+
 ## Testing for v1 Release
 
 Orchestra v1 is ready for real-server testing. Use [QA_TESTING.md](QA_TESTING.md) for:
