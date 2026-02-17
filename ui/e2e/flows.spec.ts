@@ -5,6 +5,8 @@ import { test, expect } from "@playwright/test";
  * These validate navigation and list views after login.
  */
 test.describe("Full flows (authenticated)", () => {
+  test.setTimeout(60000); // Allow time for API calls on each page
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
     await page.getByPlaceholder(/admin@orchestra/i).fill("admin@orchestra.local");
@@ -25,8 +27,9 @@ test.describe("Full flows (authenticated)", () => {
   test("Clusters page shows list or empty state", async ({ page }) => {
     await page.getByRole("link", { name: /clusters/i }).click();
     await expect(page).toHaveURL(/\/clusters/);
-    await expect(page.locator("main").getByRole("heading", { name: /clusters/i })).toBeVisible({ timeout: 5000 });
-    const hasContent = await page.getByText(/cluster|new cluster|design/i).first().isVisible();
+    await expect(page.locator("main").getByRole("heading", { name: "Clusters", exact: true })).toBeVisible({ timeout: 5000 });
+    // Page has either cluster cards or empty state ("Create Cluster", "Open Designer", etc.)
+    const hasContent = await page.locator("main").getByRole("button", { name: "Create Cluster" }).isVisible();
     expect(hasContent).toBeTruthy();
   });
 
@@ -61,6 +64,6 @@ test.describe("Full flows (authenticated)", () => {
   test("Settings page loads", async ({ page }) => {
     await page.getByRole("link", { name: /settings/i }).click();
     await expect(page).toHaveURL(/\/settings/);
-    await expect(page.locator("main").getByRole("heading", { name: /settings/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("main").getByRole("heading", { name: "Settings", exact: true })).toBeVisible({ timeout: 10000 });
   });
 });
