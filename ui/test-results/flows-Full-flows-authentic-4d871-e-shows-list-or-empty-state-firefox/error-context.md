@@ -1,0 +1,138 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Orchestra
+      - navigation [ref=e10]:
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - img [ref=e12]
+          - text: Dashboard
+        - link "Servers" [active] [ref=e17] [cursor=pointer]:
+          - /url: /servers
+          - img [ref=e18]
+          - text: Servers
+        - link "Clusters" [ref=e23] [cursor=pointer]:
+          - /url: /clusters
+          - img [ref=e24]
+          - text: Clusters
+        - link "Applications" [ref=e30] [cursor=pointer]:
+          - /url: /applications
+          - img [ref=e31]
+          - text: Applications
+        - link "Environments" [ref=e36] [cursor=pointer]:
+          - /url: /environments
+          - img [ref=e37]
+          - text: Environments
+        - link "Deployments" [ref=e41] [cursor=pointer]:
+          - /url: /deployments
+          - img [ref=e42]
+          - text: Deployments
+        - link "Monitoring" [ref=e46] [cursor=pointer]:
+          - /url: /monitoring
+          - img [ref=e47]
+          - text: Monitoring
+        - link "Settings" [ref=e49] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e50]
+          - text: Settings
+    - generic [ref=e54]:
+      - generic [ref=e55]: EC
+      - generic [ref=e56]:
+        - generic [ref=e57]: enochCodes
+        - generic [ref=e58]: Pro Plan
+  - main [ref=e59]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64] [cursor=pointer]: enochCodes
+          - generic [ref=e65]: /
+          - generic [ref=e66]: Orchestra
+        - button "P Personal" [ref=e68]:
+          - generic [ref=e69]: P
+          - text: Personal
+          - img [ref=e70]
+      - generic [ref=e72]:
+        - link "Feedback" [ref=e73] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra/issues
+          - button "Feedback" [ref=e74]:
+            - img [ref=e75]
+            - text: Feedback
+        - link "Changelog" [ref=e77] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra/releases
+          - button "Changelog" [ref=e78]:
+            - img [ref=e79]
+            - text: Changelog
+        - link "Help" [ref=e85] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra#readme
+          - button "Help" [ref=e86]:
+            - img [ref=e87]
+            - text: Help
+        - button "ES" [ref=e93]:
+          - generic [ref=e94]: ES
+          - img [ref=e95]
+    - generic [ref=e99]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - heading "Servers" [level=1] [ref=e102]
+          - paragraph [ref=e103]: Manage your physical inventory and provisioning status.
+        - button "Register Server" [ref=e104]:
+          - img [ref=e105]
+          - text: Register Server
+      - generic [ref=e108]:
+        - generic [ref=e109]:
+          - img [ref=e110]
+          - textbox "Search by hostname, IP, or tags..." [ref=e113]
+        - button "Refresh" [ref=e115]:
+          - img [ref=e116]
+          - text: Refresh
+      - table [ref=e123]:
+        - rowgroup [ref=e124]:
+          - row "Hostname Status Specs Role Last Seen Actions" [ref=e125]:
+            - columnheader "Hostname" [ref=e126]
+            - columnheader "Status" [ref=e127]
+            - columnheader "Specs" [ref=e128]
+            - columnheader "Role" [ref=e129]
+            - columnheader "Last Seen" [ref=e130]
+            - columnheader "Actions" [ref=e131]
+        - rowgroup [ref=e132]:
+          - row "node-01 192.1.1.1 error — Idle 2/14/2026 View" [ref=e133]:
+            - cell "node-01 192.1.1.1" [ref=e134]:
+              - generic [ref=e135]:
+                - text: node-01
+                - paragraph [ref=e136]: 192.1.1.1
+            - cell "error" [ref=e137]:
+              - generic [ref=e138]: error
+            - cell "—" [ref=e139]
+            - cell "Idle" [ref=e140]
+            - cell "2/14/2026" [ref=e141]
+            - cell "View" [ref=e142]:
+              - generic [ref=e143]:
+                - button "View" [ref=e144]:
+                  - img [ref=e145]
+                  - text: View
+                - button [ref=e148]:
+                  - img [ref=e149]
+          - row "node-01 192.168.1.2 error — Idle 2/14/2026 View" [ref=e155]:
+            - cell "node-01 192.168.1.2" [ref=e156]:
+              - generic [ref=e157]:
+                - text: node-01
+                - paragraph [ref=e158]: 192.168.1.2
+            - cell "error" [ref=e159]:
+              - generic [ref=e160]: error
+            - cell "—" [ref=e161]
+            - cell "Idle" [ref=e162]
+            - cell "2/14/2026" [ref=e163]
+            - cell "View" [ref=e164]:
+              - generic [ref=e165]:
+                - button "View" [ref=e166]:
+                  - img [ref=e167]
+                  - text: View
+                - button [ref=e170]:
+                  - img [ref=e171]
+```

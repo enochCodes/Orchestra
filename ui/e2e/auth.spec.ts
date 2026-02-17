@@ -22,7 +22,7 @@ test.describe("Authentication", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
 
     await expect(page).toHaveURL("/");
-    await expect(page.getByText(/dashboard/i)).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /dashboard/i })).toBeVisible();
   });
 
   test("should show error on invalid credentials", async ({ page }) => {
@@ -32,6 +32,7 @@ test.describe("Authentication", () => {
     await page.getByPlaceholder(/••••••••/).fill("wrongpassword");
     await page.getByRole("button", { name: /sign in/i }).click();
 
-    await expect(page.getByText(/invalid|failed|error/i)).toBeVisible({ timeout: 5000 });
+    // Error div appears with API message or generic "Login failed"
+    await expect(page.getByTestId("login-error")).toBeVisible({ timeout: 5000 });
   });
 });

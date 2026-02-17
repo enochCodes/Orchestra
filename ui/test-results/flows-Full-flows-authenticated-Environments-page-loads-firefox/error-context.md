@@ -1,0 +1,92 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Orchestra
+      - navigation [ref=e10]:
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - img [ref=e12]
+          - text: Dashboard
+        - link "Servers" [ref=e17] [cursor=pointer]:
+          - /url: /servers
+          - img [ref=e18]
+          - text: Servers
+        - link "Clusters" [ref=e23] [cursor=pointer]:
+          - /url: /clusters
+          - img [ref=e24]
+          - text: Clusters
+        - link "Applications" [ref=e30] [cursor=pointer]:
+          - /url: /applications
+          - img [ref=e31]
+          - text: Applications
+        - link "Environments" [active] [ref=e36] [cursor=pointer]:
+          - /url: /environments
+          - img [ref=e37]
+          - text: Environments
+        - link "Deployments" [ref=e41] [cursor=pointer]:
+          - /url: /deployments
+          - img [ref=e42]
+          - text: Deployments
+        - link "Monitoring" [ref=e46] [cursor=pointer]:
+          - /url: /monitoring
+          - img [ref=e47]
+          - text: Monitoring
+        - link "Settings" [ref=e49] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e50]
+          - text: Settings
+    - generic [ref=e54]:
+      - generic [ref=e55]: EC
+      - generic [ref=e56]:
+        - generic [ref=e57]: enochCodes
+        - generic [ref=e58]: Pro Plan
+  - main [ref=e59]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64] [cursor=pointer]: enochCodes
+          - generic [ref=e65]: /
+          - generic [ref=e66]: Orchestra
+        - button "P Personal" [ref=e68]:
+          - generic [ref=e69]: P
+          - text: Personal
+          - img [ref=e70]
+      - generic [ref=e72]:
+        - link "Feedback" [ref=e73] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra/issues
+          - button "Feedback" [ref=e74]:
+            - img [ref=e75]
+            - text: Feedback
+        - link "Changelog" [ref=e77] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra/releases
+          - button "Changelog" [ref=e78]:
+            - img [ref=e79]
+            - text: Changelog
+        - link "Help" [ref=e85] [cursor=pointer]:
+          - /url: https://github.com/enochcodes/orchestra#readme
+          - button "Help" [ref=e86]:
+            - img [ref=e87]
+            - text: Help
+        - button "ES" [ref=e93]:
+          - generic [ref=e94]: ES
+          - img [ref=e95]
+    - generic [ref=e99]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - heading "Environments" [level=1] [ref=e102]
+          - paragraph [ref=e103]: Manage environment variables per cluster. Push configs to all servers in one click.
+        - button "New Environment" [ref=e104]:
+          - img [ref=e105]
+          - text: New Environment
+      - generic [ref=e109]:
+        - img [ref=e110]
+        - heading "No Environments" [level=3] [ref=e114]
+        - paragraph [ref=e115]: Create an environment to manage variables for a cluster scope (production, staging, preview).
+        - button "Create Environment" [ref=e116]
+```

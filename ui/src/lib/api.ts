@@ -53,15 +53,26 @@ async function request<T>(
     headers,
   });
 
+  const text = await res.text();
+
   if (res.status === 401) {
     clearToken();
-    if (typeof window !== "undefined") {
+    // Don't redirect when the 401 is from login itself (invalid credentials)
+    const isLoginRequest = path === "/auth/login";
+    if (typeof window !== "undefined" && !isLoginRequest) {
       window.location.href = "/login";
     }
-    throw new Error("Unauthorized");
+    // Use API error message for login failures, otherwise generic
+    let msg = "Unauthorized";
+    if (isLoginRequest && text) {
+      try {
+        const j = JSON.parse(text);
+        msg = j.message || j.error || msg;
+      } catch {}
+    }
+    throw new Error(msg);
   }
 
-  const text = await res.text();
   if (!res.ok) {
     let msg = text;
     try {
