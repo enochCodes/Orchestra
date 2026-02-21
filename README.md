@@ -147,7 +147,7 @@ Orchestra v1 is ready for real-server testing. Use [QA_TESTING.md](QA_TESTING.md
 - Troubleshooting guide
 
 ## Contributing
-## autor @enochCodes | henoksamson57@gmail.com
+## author @enochCodes | henoksamson57@gmail.com
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
